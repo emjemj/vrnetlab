@@ -161,9 +161,8 @@ class XRV_vm(vrnetlab.VM):
         self.wait_write("exit")
 
         # execute any extra configuration
-        if len(self.extra_config) > 0:
-            for cmd in self.extra_config:
-                self.wait_write(cmd)
+        for cmd in self.extra_config:
+            self.wait_write(cmd)
 
         # commit configuration and exit configuration mode
         self.wait_write("commit")
@@ -184,7 +183,7 @@ if __name__ == '__main__':
     parser.add_argument('--trace', action='store_true', help='enable trace level logging')
     parser.add_argument('--username', default='vrnetlab', help='Username')
     parser.add_argument('--password', default='VR-netlab9', help='Password')
-    parser.add_argument('--extra-config', '-X', help='extra lines of config', nargs='*')
+    parser.add_argument('--extra-config', '-X', default=[], help='extra lines of config', nargs='*')
     args = parser.parse_args()
 
     LOG_FORMAT = "%(asctime)s: %(module)-10s %(levelname)-8s %(message)s"
@@ -195,10 +194,5 @@ if __name__ == '__main__':
     if args.trace:
         logger.setLevel(1)
 
-    if args.extra_config is None:
-        extra_config = []
-    else:
-        extra_config = args.extra_config
-
-    vr = XRV(args.username, args.password, extra_config)
+    vr = XRV(args.username, args.password, args.extra_config)
     vr.start()
