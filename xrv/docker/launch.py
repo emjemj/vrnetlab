@@ -33,7 +33,7 @@ logging.Logger.trace = trace
 
 
 class XRV_vm(vrnetlab.VM):
-    def __init__(self, username, password):
+    def __init__(self, username, password, extra_config=[]):
         for e in os.listdir("/"):
             if re.search(".vmdk", e):
                 disk_image = "/" + e
@@ -42,6 +42,7 @@ class XRV_vm(vrnetlab.VM):
         self.credentials = [
                 ['admin', 'admin']
             ]
+        self.extra_config = extra_config
 
         self.xr_ready = False
 
@@ -158,15 +159,22 @@ class XRV_vm(vrnetlab.VM):
         self.wait_write("no shutdown")
         self.wait_write("ipv4 address 10.0.0.15/24")
         self.wait_write("exit")
+
+        # execute any extra configuration
+        if len(self.extra_config) > 0:
+            for cmd in self.extra_config:
+                self.wait_write(cmd)
+
+        # commit configuration and exit configuration mode
         self.wait_write("commit")
         self.wait_write("exit")
 
 
 
 class XRV(vrnetlab.VR):
-    def __init__(self, username, password):
+    def __init__(self, username, password, extra_config=[]):
         super(XRV, self).__init__(username, password)
-        self.vms = [ XRV_vm(username, password) ]
+        self.vms = [ XRV_vm(username, password, extra_config) ]
 
 
 
@@ -176,6 +184,7 @@ if __name__ == '__main__':
     parser.add_argument('--trace', action='store_true', help='enable trace level logging')
     parser.add_argument('--username', default='vrnetlab', help='Username')
     parser.add_argument('--password', default='VR-netlab9', help='Password')
+    parser.add_argument('--extra-config', '-X', help='extra lines of config', nargs='*')
     args = parser.parse_args()
 
     LOG_FORMAT = "%(asctime)s: %(module)-10s %(levelname)-8s %(message)s"
@@ -186,5 +195,10 @@ if __name__ == '__main__':
     if args.trace:
         logger.setLevel(1)
 
-    vr = XRV(args.username, args.password)
+    if args.extra_config is None:
+        extra_config = []
+    else:
+        extra_config = args.extra_config
+
+    vr = XRV(args.username, args.password, extra_config)
     vr.start()
